@@ -1,11 +1,12 @@
 import 'dart:async';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:raj_eat/config/colors.dart';
 import 'package:raj_eat/providers/check_out_provider.dart';
 import 'package:location/location.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';  // Import Firestore
 
 class CostomGoogleMap extends StatefulWidget {
   const CostomGoogleMap({super.key});
@@ -29,12 +30,12 @@ class _GoogleMapState extends State<CostomGoogleMap> {
     _location.onLocationChanged.listen((event) {
       controller.animateCamera(CameraUpdate.newCameraPosition(
           CameraUpdate.newCameraPosition(CameraPosition(
-              target: LatLng(event.latitude!, event.longitude!),
-              zoom: 13)) as CameraPosition));
+              target: LatLng(event.latitude!, event.longitude!), zoom: 13))
+          as CameraPosition));
     });
   }
 
-  LatLng? _currentP = null;
+  LatLng? _currentP;
 
   @override
   void initState() {
@@ -64,7 +65,8 @@ class _GoogleMapState extends State<CostomGoogleMap> {
                 ),
                 onTap: (LatLng latLng) {
                   _markers.add(Marker(
-                      markerId: MarkerId('mark'), position: latLng));
+                      markerId: const MarkerId('mark'),
+                      position: latLng));
                   setState(() {});
                 },
                 markers: Set<Marker>.of(_markers),
@@ -81,12 +83,25 @@ class _GoogleMapState extends State<CostomGoogleMap> {
                       right: 60, left: 10, bottom: 40, top: 40),
                   child: MaterialButton(
                     onPressed: () async {
-                      await _location.getLocation().then((value) {
+                      // Get the current location
+                      await _location.getLocation().then((value) async {
                         setState(() {
                           checkoutProvider.setLoaction = value;
                         });
+
+                        // Update Firestore with latitude and longitude
+                        await FirebaseFirestore.instance
+                            .collection("AddDeliverAddress")
+                            .doc(FirebaseAuth.instance.currentUser!
+                            .uid) // Replace with actual document ID
+                            .update({
+                          'latitude': value.latitude,
+                          'longitude': value.longitude,
+                        });
+
+                        // Navigate back to the previous screen
+                        Navigator.of(context).pop();
                       });
-                      Navigator.of(context).pop();
                     },
                     color: primaryColor,
                     shape: const StadiumBorder(),
