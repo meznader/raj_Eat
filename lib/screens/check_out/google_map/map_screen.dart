@@ -8,15 +8,22 @@ import 'package:location/location.dart';
 class MapScreen extends StatefulWidget {
   final double latitude;
   final double longitude;
+  final String userId;
 
-  const MapScreen({Key? key, required this.latitude, required this.longitude}) : super(key: key);
+  const MapScreen(
+      {Key? key,
+      required this.latitude,
+      required this.longitude,
+      required this.userId})
+      : super(key: key);
 
   @override
   _MapScreenState createState() => _MapScreenState();
 }
 
 class _MapScreenState extends State<MapScreen> {
-  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _mapController =
+      Completer<GoogleMapController>();
   Set<Marker> _markers = {};
   LatLng? _currentP;
 
@@ -26,7 +33,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    getLocationUpdates();
+    // getLocationUpdates();
     _fetchUserAddressLocation();
   }
 
@@ -34,16 +41,19 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final docSnapshot = await FirebaseFirestore.instance
           .collection("AddDeliverAddress")
-          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .doc(widget.userId)
           .get();
 
       if (docSnapshot.exists) {
-        final data = docSnapshot.data() as Map<String, dynamic>; // Cast to Map<String, dynamic>
+        final data = docSnapshot.data()
+            as Map<String, dynamic>; // Cast to Map<String, dynamic>
         final latitude = data['latitude'] as double?;
         final longitude = data['longitude'] as double?;
-
+  
         if (latitude != null && longitude != null) {
           final location = LatLng(latitude, longitude);
+                print(
+            '----------------------------------->>>>>>>>>>>>>>>${latitude}----${longitude}');
           setState(() {
             _currentP = location;
             _markers.add(Marker(
@@ -54,11 +64,9 @@ class _MapScreenState extends State<MapScreen> {
 
           final GoogleMapController mapController = await _mapController.future;
           mapController.animateCamera(CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: location,
-              zoom: 13,
-            ),
-          ));
+              CameraUpdate.newCameraPosition(
+                      CameraPosition(target: location, zoom: 13))
+                  as CameraPosition));
         }
       } else {
         print('Document does not exist');
@@ -68,25 +76,15 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  late GoogleMapController controller;
+
   void _onMapCreated(GoogleMapController value) {
-    _mapController.complete(value);
-    _location.onLocationChanged.listen((LocationData currentLocation) {
-      if (currentLocation.latitude != null && currentLocation.longitude != null) {
-        final newLocation = LatLng(currentLocation.latitude!, currentLocation.longitude!);
-        setState(() {
-          _currentP = newLocation;
-          _markers.add(Marker(
-            markerId: const MarkerId('currentLocation'),
-            position: newLocation,
-          ));
-        });
-        value.animateCamera(CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: newLocation,
-            zoom: 13,
-          ),
-        ));
-      }
+    controller = value;
+    _location.onLocationChanged.listen((event) {
+      controller.animateCamera(CameraUpdate.newCameraPosition(
+          CameraUpdate.newCameraPosition(CameraPosition(
+              target: LatLng(event.latitude!, event.longitude!),
+              zoom: 13)) as CameraPosition));
     });
   }
 
@@ -109,9 +107,11 @@ class _MapScreenState extends State<MapScreen> {
       }
     }
     _location.onLocationChanged.listen((LocationData currentLocation) {
-      if (currentLocation.latitude != null && currentLocation.longitude != null) {
+      if (currentLocation.latitude != null &&
+          currentLocation.longitude != null) {
         setState(() {
-          _currentP = LatLng(currentLocation.latitude!, currentLocation.longitude!);
+          _currentP =
+              LatLng(currentLocation.latitude!, currentLocation.longitude!);
         });
       }
     });
@@ -119,6 +119,9 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final arguments = (ModalRoute.of(context)?.settings.arguments ??
+        <String, dynamic>{}) as Map;
+
     return Scaffold(
       body: SafeArea(
         child: SizedBox(
@@ -128,25 +131,25 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               _currentP == null
                   ? const Center(
-                child: Text("Loading..."),
-              )
+                      child: Text("Loading..."),
+                    )
                   : GoogleMap(
-                onMapCreated: _onMapCreated,
-                initialCameraPosition: CameraPosition(
-                  target: _currentP!,
-                  zoom: 11.0,
-                ),
-                onTap: (LatLng latLng) {
-                  setState(() {
-                    _markers.add(Marker(
-                      markerId: MarkerId(latLng.toString()),
-                      position: latLng,
-                    ));
-                  });
-                },
-                markers: _markers,
-                mapType: MapType.normal,
-              ),
+                      onMapCreated: _onMapCreated,
+                      initialCameraPosition: CameraPosition(
+                        target: _currentP!,
+                        zoom: 11.0,
+                      ),
+                      onTap: (LatLng latLng) {
+                        setState(() {
+                          _markers.add(Marker(
+                            markerId: MarkerId(latLng.toString()),
+                            position: latLng,
+                          ));
+                        });
+                      },
+                      markers: _markers,
+                      mapType: MapType.normal,
+                    ),
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -154,7 +157,8 @@ class _MapScreenState extends State<MapScreen> {
                 child: Container(
                   height: 50,
                   width: double.infinity,
-                  margin: const EdgeInsets.only(right: 60, left: 10, bottom: 40, top: 40),
+                  margin: const EdgeInsets.only(
+                      right: 60, left: 10, bottom: 40, top: 40),
                   child: MaterialButton(
                     onPressed: () {
                       Navigator.of(context).pop();

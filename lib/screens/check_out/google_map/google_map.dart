@@ -6,6 +6,8 @@ import 'package:raj_eat/providers/check_out_provider.dart';
 import 'package:location/location.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CostomGoogleMap extends StatefulWidget {
   const CostomGoogleMap({super.key});
@@ -16,7 +18,7 @@ class CostomGoogleMap extends StatefulWidget {
 
 class _GoogleMapState extends State<CostomGoogleMap> {
   final Completer<GoogleMapController> _mapController =
-  Completer<GoogleMapController>();
+      Completer<GoogleMapController>();
   Set<Marker> _markers = {};
 
   static const LatLng _initialcameraposition = LatLng(36.8065, 10.1815);
@@ -54,22 +56,22 @@ class _GoogleMapState extends State<CostomGoogleMap> {
             children: [
               _currentP == null
                   ? const Center(
-                child: Text("Loading..."),
-              )
+                      child: Text("Loading..."),
+                    )
                   : GoogleMap(
-                onMapCreated: _onMapCreated,
-                initialCameraPosition: CameraPosition(
-                  target: _initialcameraposition,
-                  zoom: 11.0,
-                ),
-                onTap: (LatLng latLng) {
-                  _markers.add(Marker(
-                      markerId: MarkerId('mark'), position: latLng));
-                  setState(() {});
-                },
-                markers: Set<Marker>.of(_markers),
-                mapType: MapType.normal,
-              ),
+                      onMapCreated: _onMapCreated,
+                      initialCameraPosition: CameraPosition(
+                        target: _initialcameraposition,
+                        zoom: 11.0,
+                      ),
+                      onTap: (LatLng latLng) {
+                        _markers.add(Marker(
+                            markerId: MarkerId('mark'), position: latLng));
+                        setState(() {});
+                      },
+                      markers: Set<Marker>.of(_markers),
+                      mapType: MapType.normal,
+                    ),
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -81,11 +83,20 @@ class _GoogleMapState extends State<CostomGoogleMap> {
                       right: 60, left: 10, bottom: 40, top: 40),
                   child: MaterialButton(
                     onPressed: () async {
-                      await _location.getLocation().then((value) {
-                        setState(() {
-                          checkoutProvider.setLoaction = value;
-                        });
+                      // await _location.getLocation().then((value) async {
+                      // setState(() {
+                      //   checkoutProvider.setLoaction = value;
+                      // });
+                      await FirebaseFirestore.instance
+                          .collection("AddDeliverAddress")
+                          .doc(FirebaseAuth.instance.currentUser!
+                              .uid) // Replace with actual document ID
+                          .update({
+                        'latitude': _markers.last.position.latitude,
+                        'longitude': _markers.last.position.longitude,
                       });
+                      // });
+
                       Navigator.of(context).pop();
                     },
                     color: primaryColor,

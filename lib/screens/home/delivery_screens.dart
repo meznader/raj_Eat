@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:raj_eat/screens/check_out/google_map/map_screen.dart';
 
-
 class DeliveryScreen extends StatefulWidget {
   const DeliveryScreen({super.key});
 
@@ -12,19 +11,25 @@ class DeliveryScreen extends StatefulWidget {
 
 class _DeliveryScreenState extends State<DeliveryScreen> {
   Future<List<Map<String, dynamic>>> fetchDeliveryOrders() async {
-    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
+        .instance
         .collection('LivraisonOrder')
         .where('deliveryStatus', isNotEqualTo: 'Livré')
         .get();
 
-    return snapshot.docs.map((doc) => {
-      'orderId': doc.id,
-      ...doc.data(),
-    }).toList();
+    return snapshot.docs
+        .map((doc) => {
+              'orderId': doc.id,
+              ...doc.data(),
+            })
+        .toList();
   }
 
   Future<void> updateDeliveryStatus(String orderId, String newStatus) async {
-    await FirebaseFirestore.instance.collection('LivraisonOrder').doc(orderId).update({
+    await FirebaseFirestore.instance
+        .collection('LivraisonOrder')
+        .doc(orderId)
+        .update({
       'deliveryStatus': newStatus,
     });
   }
@@ -41,7 +46,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return const Center(child: Text('Erreur lors de la récupération des commandes'));
+            return const Center(
+                child: Text('Erreur lors de la récupération des commandes'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('Aucune commande à livrer'));
           }
@@ -51,7 +57,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
             itemCount: deliveries.length,
             itemBuilder: (context, index) {
               Map<String, dynamic> delivery = deliveries[index];
-              String deliveryStatus = delivery['deliveryStatus'] ?? 'En attente';
+              String deliveryStatus =
+                  delivery['deliveryStatus'] ?? 'En attente';
               String cartName = delivery['cartName'] ?? 'Nom inconnu';
 
               return Card(
@@ -59,7 +66,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                   side: BorderSide(
-                    color: deliveryStatus == 'Livré' ? Colors.green : Colors.orange,
+                    color: deliveryStatus == 'Livré'
+                        ? Colors.green
+                        : Colors.orange,
                     width: 2,
                   ),
                 ),
@@ -104,7 +113,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       Text(
                         'Statut de livraison: $deliveryStatus',
                         style: TextStyle(
-                          color: deliveryStatus == 'Livré' ? Colors.green : Colors.orange,
+                          color: deliveryStatus == 'Livré'
+                              ? Colors.green
+                              : Colors.orange,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -113,15 +124,22 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildStatusButton(deliveryStatus, delivery['orderId']),
+                          _buildStatusButton(
+                              deliveryStatus, delivery['orderId']),
                           IconButton(
-                            icon: const Icon(Icons.map, color: Colors.blueAccent),
+                            icon:
+                                const Icon(Icons.map, color: Colors.blueAccent),
                             onPressed: () {
+                              print(
+                                  '->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${delivery}');
                               _navigateToMap(
-                                context,
-                                delivery['latitude'] ?? 0.0, // Use real data from Firestore
-                                delivery['longitude'] ?? 0.0, // Use real data from Firestore
-                              );
+                                  context,
+                                  delivery['latitude'] ??
+                                      1.0, // Use real data from Firestore
+                                  delivery['longitude'] ?? 1.0,
+                                  delivery[
+                                      'userId'] // Use real data from Firestore
+                                  );
                             },
                           ),
                         ],
@@ -170,11 +188,13 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   }
 
   // Navigate to map page with latitude and longitude
-  void _navigateToMap(BuildContext context, double latitude, double longitude) {
+  void _navigateToMap(
+      BuildContext context, double latitude, double longitude, String userId) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MapScreen(latitude: latitude, longitude: longitude),
+        builder: (context) =>
+            MapScreen(latitude: latitude, longitude: longitude, userId: userId),
       ),
     );
   }
