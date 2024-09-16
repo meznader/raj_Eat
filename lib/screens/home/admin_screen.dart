@@ -6,7 +6,7 @@ import 'package:raj_eat/screens/admin_order/ComplaintsListPage.dart';
 import 'package:raj_eat/screens/admin_order/admin_order.dart';
 import 'package:raj_eat/config/colors.dart';
 import 'package:raj_eat/screens/reservation/admin_reservation_page.dart';
-import 'package:raj_eat/screens/stock/option_satistics.dart';
+import 'package:raj_eat/screens/stock/satistiques_page.dart';
 import 'package:raj_eat/singup/sing_up_delivery.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -79,7 +79,7 @@ class _AdminScreenState extends State<AdminScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => OptionStatisticsPage(productId: exampleProductId),
+                    builder: (context) => StatistiquesPage (),
                   ),
                 );
               },

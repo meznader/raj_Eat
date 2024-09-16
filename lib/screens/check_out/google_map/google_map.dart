@@ -15,7 +15,8 @@ class CostomGoogleMap extends StatefulWidget {
 }
 
 class _GoogleMapState extends State<CostomGoogleMap> {
-  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _mapController =
+  Completer<GoogleMapController>();
   Set<Marker> _markers = {};
 
   static const LatLng _initialcameraposition = LatLng(36.8065, 10.1815);
@@ -26,11 +27,10 @@ class _GoogleMapState extends State<CostomGoogleMap> {
   void _onMapCreated(GoogleMapController value) {
     controller = value;
     _location.onLocationChanged.listen((event) {
-      controller.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: _initialcameraposition, zoom: 13),
-        ),
-      );
+      controller.animateCamera(CameraUpdate.newCameraPosition(
+          CameraUpdate.newCameraPosition(CameraPosition(
+              target: LatLng(event.latitude!, event.longitude!),
+              zoom: 13)) as CameraPosition));
     });
   }
 
@@ -63,13 +63,14 @@ class _GoogleMapState extends State<CostomGoogleMap> {
                   zoom: 11.0,
                 ),
                 onTap: (LatLng latLng) {
-                  _markers.add(Marker(markerId: MarkerId('mark'), position: latLng));
+                  _markers.add(Marker(
+                      markerId: MarkerId('mark'), position: latLng));
                   setState(() {});
                 },
                 markers: Set<Marker>.of(_markers),
                 mapType: MapType.normal,
               ),
-             Positioned(
+              Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
@@ -100,11 +101,10 @@ class _GoogleMapState extends State<CostomGoogleMap> {
     );
   }
 
- Future<void> _cameraToPosition(LatLng pos) async {
+  Future<void> _cameraToPosition(LatLng pos) async {
     final GoogleMapController controller = await _mapController.future;
     CameraPosition _newCameraPosition = CameraPosition(
       target: pos,
-
     );
     await controller.animateCamera(
       CameraUpdate.newCameraPosition(_newCameraPosition),
@@ -133,8 +133,8 @@ class _GoogleMapState extends State<CostomGoogleMap> {
       if (currentLocation.latitude != null &&
           currentLocation.longitude != null) {
         setState(() {
-          _currentP = LatLng(currentLocation.latitude!, currentLocation.longitude!);
-
+          _currentP =
+              LatLng(currentLocation.latitude!, currentLocation.longitude!);
         });
       }
     });
