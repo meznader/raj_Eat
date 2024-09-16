@@ -30,8 +30,8 @@ class ReviewCartProvider with ChangeNotifier {
             "cartImage": cartImage,
             "cartPrice": cartPrice,
             "cartQuantity": cartQuantity,
-            "cartUnit":cartUnit,
-            "selectedOptions" : selectedOptions,
+            "cartUnit": cartUnit,
+            "selectedOptions": selectedOptions,
             "isAdd": true,
           }
       );
@@ -57,7 +57,7 @@ class ReviewCartProvider with ChangeNotifier {
         "cartImage": cartImage,
         "cartPrice": cartPrice,
         "cartQuantity": cartQuantity,
-        "isAdd":true,
+        "isAdd": true,
       },
     );
   }
@@ -80,7 +80,7 @@ class ReviewCartProvider with ChangeNotifier {
           cartPrice: element.get("cartPrice"),
           cartQuantity: element.get("cartQuantity"),
           cartUnit: element.get("cartUnit"),
-          selectedOptions:  element.get("selectedOptions").cast<String>(),
+          selectedOptions: element.get("selectedOptions").cast<String>(),
         );
         newList.add(reviewCartModel);
       }
@@ -94,16 +94,13 @@ class ReviewCartProvider with ChangeNotifier {
     return reviewCartDataList;
   }
 
-
-  getTotalPrice(){
+  getTotalPrice() {
     double total = 0.0;
     for (var element in reviewCartDataList) {
       total += element.cartPrice * element.cartQuantity;
-
     }
     return total;
   }
-
 
   reviewCartDataDelete(cartId) {
     FirebaseFirestore.instance
@@ -114,32 +111,35 @@ class ReviewCartProvider with ChangeNotifier {
         .delete();
     notifyListeners();
   }
+
   Future<QuerySnapshot<Object?>> getAllReviewCartData() async {
     List<ReviewCartModel> cartList = [];
 
     // Check if currentUser is not null before accessing uid
-      QuerySnapshot reviewCartValue = await FirebaseFirestore.instance
-          .collection("ReviewCart")
-          .get();
+    QuerySnapshot reviewCartValue = await FirebaseFirestore.instance
+        .collection("ReviewCart")
+        .get();
     print('QuerySnapshot: ${reviewCartValue.docs}');
 
-    // for (var element in reviewCartValue.docs) {
-    //     ReviewCartModel reviewCartModel = Prder(
-    //       cartId: element.get("cartId"),
-    //       cartImage: element.get("cartImage"),
-    //       cartName: element.get("cartName"),
-    //       cartPrice: element.get("cartPrice"),
-    //       cartQuantity: element.get("cartQuantity"),
-    //       cartUnit: element.get("cartUnit"),
-    //     );
-    //     if (cartList.contains(reviewCartModel) == false) {
-    //       cartList.contains(reviewCartModel);
-    //     }
-    // }
-
-
-    // reviewCartDataList = cartList;
-
     return reviewCartValue;
+  }
+
+  // New method to mark order as in progress
+  Future<void> markOrderAsInProgress(String cartId) async {
+    try {
+      // Check if currentUser is not null before accessing uid
+      if (FirebaseAuth.instance.currentUser != null) {
+        await FirebaseFirestore.instance
+            .collection("ReviewCart")
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .collection("YourReviewCart")
+            .doc(cartId)
+            .update({'status': 'In Progress'});
+        notifyListeners(); // Notify listeners to refresh the UI
+      }
+    } catch (e) {
+      print("Error updating order status: $e");
+      // Handle the error (e.g., show a toast or dialog)
+    }
   }
 }

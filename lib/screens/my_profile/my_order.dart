@@ -1,93 +1,92 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:provider/provider.dart';
-import 'package:raj_eat/models/review_cart_model.dart';
-import 'package:raj_eat/providers/review_cart_provider.dart';
-import 'package:raj_eat/screens/check_out/delivery_details/delivery_details.dart';
-import '../../config/colors.dart';
-import '../../widgets/single_item.dart';
 
-class MyOrder extends StatelessWidget {
+class MyOrder extends StatefulWidget {
   const MyOrder({super.key});
 
-  void showAlertDialog(BuildContext context, ReviewCartModel delete) {
-    // Set up the buttons
-    Widget cancelButton = TextButton(
-      child: const Text("No"),
-      onPressed: () {
-        Navigator.of(context).pop();
-      },
-    );
-    Widget continueButton = TextButton(
-      child: const Text("Yes"),
-      onPressed: () {
-        Provider.of<ReviewCartProvider>(context, listen: false)
-            .reviewCartDataDelete(delete.cartId);
-        Navigator.of(context).pop();
-      },
-    );
+  @override
+  _MyOrderState createState() => _MyOrderState();
+}
 
-    // Set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: const Text("Cart Product"),
-      content: const Text("Are you sure you want to delete this cart product?"),
-      actions: [
-        cancelButton,
-        continueButton,
-      ],
-    );
+class _MyOrderState extends State<MyOrder> {
+  // Fonction pour récupérer les commandes "En route"
+  Future<List<Map<String, dynamic>>> fetchEnRouteOrders() async {
+    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+        .collection('LivraisonOrder')
+        .where('deliveryStatus', isEqualTo: 'En route') // Filtrer par statut "En route"
+        .get();
 
-    // Show the dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
-    );
+    return snapshot.docs.map((doc) => {
+      'orderId': doc.id,
+      ...doc.data(),
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: SizedBox(
-        height: 0, // Set height to 0 or remove this widget if you don't want any BottomAppBar
-      ),
       appBar: AppBar(
-        title: Text(
-          "My Order",
-          style: TextStyle(color: textColor, fontSize: 18),
-        ),
+        title: const Text('my order'),
       ),
-      body: Consumer<ReviewCartProvider>(
-        builder: (context, reviewCartProvider, _) {
-          reviewCartProvider.getReviewCartData(); // Fetch data here if needed
-          return reviewCartProvider.getReviewCartDataList.isEmpty
-              ? const Center(
-            child: Text("NO DATA"),
-          )
-              : ListView.builder(
-            itemCount: reviewCartProvider.getReviewCartDataList.length,
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: fetchEnRouteOrders(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('Erreur lors de la récupération des commandes'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('Aucune commande en route'));
+          }
+
+          List<Map<String, dynamic>> enRouteOrders = snapshot.data!;
+          return ListView.builder(
+            itemCount: enRouteOrders.length,
             itemBuilder: (context, index) {
-              ReviewCartModel data = reviewCartProvider.getReviewCartDataList[index];
-              return Column(
-                children: [
-                  const SizedBox(
-                    height: 10,
+              Map<String, dynamic> order = enRouteOrders[index];
+              String cartName = order['cartName'] ?? 'Nom inconnu'; // Nom de la commande
+
+
+              return Card(
+                margin: const EdgeInsets.all(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Commande: $cartName',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Client: ${order['firstname']} ${order['lastName']}',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 5),
+
+                      Text(
+                        'Total: D${order['totalAmount']}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Statut de livraison: ${order['deliveryStatus']}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
                   ),
-                  SingleItem(
-                    isBool: true,
-                    wishList: true,
-                    productImage: data.cartImage,
-                    productPrice: data.cartPrice,
-                    productName: data.cartName,
-                    productId: data.cartId,
-                    productQuantity: data.cartQuantity,
-                    productUnit: data.cartUnit,
-                    onDelete: () {
-                      showAlertDialog(context, data);
-                    },
-                  ),
-                ],
+                ),
               );
             },
           );
